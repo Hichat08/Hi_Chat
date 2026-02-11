@@ -54,7 +54,7 @@ const MessageItem = ({
             {isGroupBreak && (
               <UserAvatar
                 type="chat"
-                name={participant?.displayName ?? "Moji"}
+                name={participant?.displayName ?? "HiChat"}
                 avatarUrl={participant?.avatarUrl ?? undefined}
               />
             )}
@@ -88,7 +88,7 @@ const MessageItem = ({
                   : "bg-muted text-muted-foreground"
               )}
             >
-              {lastMessageStatus}
+              {lastMessageStatus === "delivered" ? "Đã nhận" : lastMessageStatus === "seen" ? "Đã xem" : lastMessageStatus}
             </Badge>
           )}
         </div>

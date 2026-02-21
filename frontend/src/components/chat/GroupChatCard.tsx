@@ -57,8 +57,13 @@ const GroupChatCard = ({ convo }: { convo: Conversation }) => {
       isDirect={false}
       isArchived={convo.isArchived}
       onArchive={async (value) => {
-        await updateConversationPreference(convo._id, "archive", value);
-        toast.success(value ? "Đã lưu trữ" : "Đã bỏ lưu trữ");
+        try {
+          await updateConversationPreference(convo._id, "archive", value);
+          toast.success(value ? "Đã lưu trữ" : "Đã bỏ lưu trữ");
+        } catch (error) {
+          console.error(error);
+          toast.error("Không thể cập nhật lưu trữ");
+        }
       }}
       onDelete={handleDelete}
       leftSection={

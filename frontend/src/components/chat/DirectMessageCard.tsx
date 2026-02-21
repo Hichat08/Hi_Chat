@@ -68,16 +68,31 @@ const DirectMessageCard = ({ convo }: { convo: Conversation }) => {
       isRestricted={convo.isRestricted}
       isBlocked={convo.isBlocked}
       onArchive={async (value) => {
-        await updateConversationPreference(convo._id, "archive", value);
-        toast.success(value ? "Đã lưu trữ" : "Đã bỏ lưu trữ");
+        try {
+          await updateConversationPreference(convo._id, "archive", value);
+          toast.success(value ? "Đã lưu trữ" : "Đã bỏ lưu trữ");
+        } catch (error) {
+          console.error(error);
+          toast.error("Không thể cập nhật lưu trữ");
+        }
       }}
       onRestrict={async (value) => {
-        await updateConversationPreference(convo._id, "restrict", value);
-        toast.success(value ? "Đã hạn chế" : "Đã bỏ hạn chế");
+        try {
+          await updateConversationPreference(convo._id, "restrict", value);
+          toast.success(value ? "Đã hạn chế" : "Đã bỏ hạn chế");
+        } catch (error) {
+          console.error(error);
+          toast.error("Không thể cập nhật hạn chế");
+        }
       }}
       onBlock={async (value) => {
-        await updateConversationPreference(convo._id, "block", value);
-        toast.success(value ? "Đã chặn người dùng" : "Đã bỏ chặn");
+        try {
+          await updateConversationPreference(convo._id, "block", value);
+          toast.success(value ? "Đã chặn người dùng" : "Đã bỏ chặn");
+        } catch (error) {
+          console.error(error);
+          toast.error("Không thể cập nhật chặn");
+        }
       }}
       onDelete={handleDelete}
       leftSection={

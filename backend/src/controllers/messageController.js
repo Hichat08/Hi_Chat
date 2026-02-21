@@ -18,6 +18,10 @@ export const sendDirectMessage = async (req, res) => {
       return res.status(400).json({ message: "Thiếu nội dung" });
     }
 
+    if (!conversationId && !recipientId) {
+      return res.status(400).json({ message: "Thiếu recipientId" });
+    }
+
     if (conversationId) {
       conversation = await Conversation.findById(conversationId);
 

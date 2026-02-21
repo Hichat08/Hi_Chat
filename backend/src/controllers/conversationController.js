@@ -98,7 +98,8 @@ export const createConversation = async (req, res) => {
 
     if (type === "group") {
       memberIds.forEach((memberId) => {
-        io.to(memberId).emit("new-group", formatted);
+        const memberFormatted = mapConversationForUser(conversation, memberId);
+        io.to(memberId).emit("new-group", memberFormatted);
       });
     }
 
@@ -247,7 +248,7 @@ export const markAsSeen = async (req, res) => {
 
     return res.status(200).json({
       message: "Marked as seen",
-      seenBy: updated?.sennBy || [],
+      seenBy: updated?.seenBy || [],
       myUnreadCount: updated?.unreadCounts[userId] || 0,
     });
   } catch (error) {

@@ -50,6 +50,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
         ...conversation,
         lastMessage,
         unreadCounts,
+        streak: conversation.streak,
       };
 
       if (useChatStore.getState().activeConversationId === message.conversationId) {
@@ -76,6 +77,10 @@ export const useSocketStore = create<SocketState>((set, get) => ({
     socket.on("new-group", (conversation) => {
       useChatStore.getState().addConvo(conversation);
       socket.emit("join-conversation", conversation._id);
+    });
+
+    socket.on("conversation-deleted", ({ conversationId }) => {
+      useChatStore.getState().removeConversation(conversationId);
     });
   },
   disconnectSocket: () => {

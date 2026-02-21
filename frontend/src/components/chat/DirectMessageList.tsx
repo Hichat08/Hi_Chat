@@ -7,7 +7,7 @@ const DirectMessageList = () => {
   if (!conversations) return;
 
   const directConversations = conversations.filter(
-    (convo) => convo.type === "direct"
+    (convo) => convo.type === "direct" && !convo.isArchived
   );
 
   return (

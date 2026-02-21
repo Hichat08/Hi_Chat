@@ -4,6 +4,7 @@ import {
   emitNewMessage,
   updateConversationAfterCreateMessage,
 } from "../utils/messageHelper.js";
+import { updateDirectConversationStreak } from "../utils/streakHelper.js";
 import { io } from "../socket/index.js";
 
 export const sendDirectMessage = async (req, res) => {
@@ -19,6 +20,16 @@ export const sendDirectMessage = async (req, res) => {
 
     if (conversationId) {
       conversation = await Conversation.findById(conversationId);
+
+      if (conversation) {
+        const isMember = conversation.participants.some(
+          (p) => p.userId.toString() === senderId.toString()
+        );
+
+        if (!isMember) {
+          return res.status(403).json({ message: "Bạn không có quyền gửi vào cuộc trò chuyện này" });
+        }
+      }
     }
 
     if (!conversation) {
@@ -33,6 +44,11 @@ export const sendDirectMessage = async (req, res) => {
       });
     }
 
+
+    if (conversation?.type === "direct" && (conversation.blockedBy || []).length > 0) {
+      return res.status(403).json({ message: "Cuộc trò chuyện đang bị chặn" });
+    }
+
     const message = await Message.create({
       conversationId: conversation._id,
       senderId,
@@ -40,6 +56,7 @@ export const sendDirectMessage = async (req, res) => {
     });
 
     updateConversationAfterCreateMessage(conversation, message, senderId);
+    updateDirectConversationStreak(conversation, senderId, message.createdAt);
 
     await conversation.save();
 

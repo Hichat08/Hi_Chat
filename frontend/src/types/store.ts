@@ -69,6 +69,13 @@ export interface ChatState {
     name: string,
     memberIds: string[]
   ) => Promise<void>;
+  updateConversationPreference: (
+    conversationId: string,
+    action: "archive" | "restrict" | "block",
+    value: boolean
+  ) => Promise<void>;
+  deleteConversationForEveryone: (conversationId: string) => Promise<void>;
+  removeConversation: (conversationId: string) => void;
 }
 
 export interface SocketState {

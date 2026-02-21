@@ -2,6 +2,33 @@ import Conversation from "../models/Conversation.js";
 import Message from "../models/Message.js";
 import { io } from "../socket/index.js";
 
+const isParticipant = (conversation, userId) => {
+  return conversation.participants.some(
+    (p) => p.userId.toString() === userId.toString()
+  );
+};
+
+const mapConversationForUser = (convo, userId) => {
+  const participants = (convo.participants || []).map((p) => ({
+    _id: p.userId?._id,
+    displayName: p.userId?.displayName,
+    avatarUrl: p.userId?.avatarUrl ?? null,
+    joinedAt: p.joinedAt,
+  }));
+
+  const uid = userId.toString();
+  const data = convo.toObject();
+
+  return {
+    ...data,
+    unreadCounts: convo.unreadCounts || {},
+    participants,
+    isArchived: (convo.archivedBy || []).some((id) => id.toString() === uid),
+    isRestricted: (convo.restrictedBy || []).some((id) => id.toString() === uid),
+    isBlocked: (convo.blockedBy || []).some((id) => id.toString() === uid),
+  };
+};
+
 export const createConversation = async (req, res) => {
   try {
     const { type, name, memberIds } = req.body;
@@ -67,18 +94,11 @@ export const createConversation = async (req, res) => {
       { path: "lastMessage.senderId", select: "displayName avatarUrl" },
     ]);
 
-    const participants = (conversation.participants || []).map((p) => ({
-      _id: p.userId?._id,
-      displayName: p.userId?.displayName,
-      avatarUrl: p.userId?.avatarUrl ?? null,
-      joinedAt: p.joinedAt,
-    }));
-
-    const formatted = { ...conversation.toObject(), participants };
+    const formatted = mapConversationForUser(conversation, userId);
 
     if (type === "group") {
-      memberIds.forEach((userId) => {
-        io.to(userId).emit("new-group", formatted);
+      memberIds.forEach((memberId) => {
+        io.to(memberId).emit("new-group", formatted);
       });
     }
 
@@ -109,20 +129,7 @@ export const getConversations = async (req, res) => {
         select: "displayName avatarUrl",
       });
 
-    const formatted = conversations.map((convo) => {
-      const participants = (convo.participants || []).map((p) => ({
-        _id: p.userId?._id,
-        displayName: p.userId?.displayName,
-        avatarUrl: p.userId?.avatarUrl ?? null,
-        joinedAt: p.joinedAt,
-      }));
-
-      return {
-        ...convo.toObject(),
-        unreadCounts: convo.unreadCounts || {},
-        participants,
-      };
-    });
+    const formatted = conversations.map((convo) => mapConversationForUser(convo, userId));
 
     return res.status(200).json({ conversations: formatted });
   } catch (error) {
@@ -135,6 +142,16 @@ export const getMessages = async (req, res) => {
   try {
     const { conversationId } = req.params;
     const { limit = 50, cursor } = req.query;
+    const userId = req.user._id;
+
+    const conversation = await Conversation.findById(conversationId).lean();
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation không tồn tại" });
+    }
+
+    if (!isParticipant(conversation, userId)) {
+      return res.status(403).json({ message: "Bạn không có quyền truy cập" });
+    }
 
     const query = { conversationId };
 
@@ -191,6 +208,10 @@ export const markAsSeen = async (req, res) => {
       return res.status(404).json({ message: "Conversation không tồn tại" });
     }
 
+    if (!isParticipant(conversation, userId)) {
+      return res.status(403).json({ message: "Bạn không có quyền truy cập" });
+    }
+
     const last = conversation.lastMessage;
 
     if (!last) {
@@ -231,6 +252,89 @@ export const markAsSeen = async (req, res) => {
     });
   } catch (error) {
     console.error("Lỗi khi mark as seen", error);
+    return res.status(500).json({ message: "Lỗi hệ thống" });
+  }
+};
+
+export const updateConversationPreference = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const { action, value } = req.body;
+    const userId = req.user._id.toString();
+
+    const fieldMap = {
+      archive: "archivedBy",
+      restrict: "restrictedBy",
+      block: "blockedBy",
+    };
+
+    if (!fieldMap[action]) {
+      return res.status(400).json({ message: "Action không hợp lệ" });
+    }
+
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation không tồn tại" });
+    }
+
+    if (!isParticipant(conversation, userId)) {
+      return res.status(403).json({ message: "Bạn không có quyền truy cập" });
+    }
+
+    if (conversation.type !== "direct" && ["restrict", "block"].includes(action)) {
+      return res.status(400).json({ message: "Chỉ hỗ trợ cho chat trực tiếp" });
+    }
+
+    const field = fieldMap[action];
+    const shouldEnable = typeof value === "boolean" ? value : true;
+    const curr = new Set((conversation[field] || []).map((id) => id.toString()));
+
+    if (shouldEnable) {
+      curr.add(userId);
+    } else {
+      curr.delete(userId);
+    }
+
+    conversation[field] = Array.from(curr);
+    await conversation.save();
+
+    return res.status(200).json({
+      conversationId: conversation._id,
+      action,
+      value: shouldEnable,
+    });
+  } catch (error) {
+    console.error("Lỗi updateConversationPreference", error);
+    return res.status(500).json({ message: "Lỗi hệ thống" });
+  }
+};
+
+export const deleteConversationForEveryone = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    const userId = req.user._id.toString();
+
+    const conversation = await Conversation.findById(conversationId).lean();
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation không tồn tại" });
+    }
+
+    if (!isParticipant(conversation, userId)) {
+      return res.status(403).json({ message: "Bạn không có quyền xoá conversation này" });
+    }
+
+    await Message.deleteMany({ conversationId });
+    await Conversation.findByIdAndDelete(conversationId);
+
+    io.to(conversationId).emit("conversation-deleted", { conversationId });
+
+    (conversation.participants || []).forEach((p) => {
+      io.to(p.userId.toString()).emit("conversation-deleted", { conversationId });
+    });
+
+    return res.status(200).json({ message: "Đã xoá cuộc trò chuyện cho cả 2 bên" });
+  } catch (error) {
+    console.error("Lỗi deleteConversationForEveryone", error);
     return res.status(500).json({ message: "Lỗi hệ thống" });
   }
 };

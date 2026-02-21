@@ -4,11 +4,18 @@ import type { Conversation } from "@/types/chat";
 import ChatCard from "./ChatCard";
 import UnreadCountBadge from "./UnreadCountBadge";
 import GroupChatAvatar from "./GroupChatAvatar";
+import { toast } from "sonner";
 
 const GroupChatCard = ({ convo }: { convo: Conversation }) => {
   const { user } = useAuthStore();
-  const { activeConversationId, setActiveConversation, messages, fetchMessages } =
-    useChatStore();
+  const {
+    activeConversationId,
+    setActiveConversation,
+    messages,
+    fetchMessages,
+    updateConversationPreference,
+    deleteConversationForEveryone,
+  } = useChatStore();
 
   if (!user) return null;
 
@@ -18,6 +25,20 @@ const GroupChatCard = ({ convo }: { convo: Conversation }) => {
     setActiveConversation(id);
     if (!messages[id]) {
       await fetchMessages();
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Bạn có chắc muốn xoá nhóm chat này cho tất cả thành viên không?")) {
+      return;
+    }
+
+    try {
+      await deleteConversationForEveryone(convo._id);
+      toast.success("Đã xoá nhóm chat");
+    } catch (error) {
+      console.error(error);
+      toast.error("Không thể xoá nhóm chat");
     }
   };
 
@@ -33,6 +54,13 @@ const GroupChatCard = ({ convo }: { convo: Conversation }) => {
       isActive={activeConversationId === convo._id}
       onSelect={handleSelectConversation}
       unreadCount={unreadCount}
+      isDirect={false}
+      isArchived={convo.isArchived}
+      onArchive={async (value) => {
+        await updateConversationPreference(convo._id, "archive", value);
+        toast.success(value ? "Đã lưu trữ" : "Đã bỏ lưu trữ");
+      }}
+      onDelete={handleDelete}
       leftSection={
         <>
           {unreadCount > 0 && <UnreadCountBadge unreadCount={unreadCount} />}

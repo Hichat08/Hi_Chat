@@ -11,7 +11,7 @@ export const useChatStore = create<ChatState>()(
       conversations: [],
       messages: {},
       activeConversationId: null,
-      convoLoading: false, // convo loading
+      convoLoading: false,
       messageLoading: false,
       loading: false,
 
@@ -29,7 +29,6 @@ export const useChatStore = create<ChatState>()(
         try {
           set({ convoLoading: true });
           const { conversations } = await chatService.fetchConversations();
-
           set({ conversations, convoLoading: false });
         } catch (error) {
           console.error("Lỗi xảy ra khi fetchConversations:", error);
@@ -100,6 +99,7 @@ export const useChatStore = create<ChatState>()(
           }));
         } catch (error) {
           console.error("Lỗi xảy ra khi gửi direct message", error);
+          throw error;
         }
       },
       sendGroupMessage: async (conversationId, content, imgUrl) => {
@@ -112,6 +112,7 @@ export const useChatStore = create<ChatState>()(
           }));
         } catch (error) {
           console.error("Lỗi xảy ra gửi group message", error);
+          throw error;
         }
       },
       addMessage: async (message) => {
@@ -156,6 +157,50 @@ export const useChatStore = create<ChatState>()(
             c._id === conversation._id ? { ...c, ...conversation } : c
           ),
         }));
+      },
+      removeConversation: (conversationId) => {
+        set((state) => {
+          const nextMessages = { ...state.messages };
+          delete nextMessages[conversationId];
+
+          return {
+            conversations: state.conversations.filter((c) => c._id !== conversationId),
+            messages: nextMessages,
+            activeConversationId:
+              state.activeConversationId === conversationId
+                ? null
+                : state.activeConversationId,
+          };
+        });
+      },
+      updateConversationPreference: async (conversationId, action, value) => {
+        await chatService.updateConversationPreference(conversationId, action, value);
+
+        const fieldMap = {
+          archive: "isArchived",
+          restrict: "isRestricted",
+          block: "isBlocked",
+        } as const;
+
+        const field = fieldMap[action];
+
+        set((state) => {
+          const updated = state.conversations.map((c) =>
+            c._id === conversationId ? { ...c, [field]: value } : c
+          );
+
+          return {
+            conversations: updated,
+            activeConversationId:
+              action === "archive" && value && state.activeConversationId === conversationId
+                ? null
+                : state.activeConversationId,
+          };
+        });
+      },
+      deleteConversationForEveryone: async (conversationId) => {
+        await chatService.deleteConversationForEveryone(conversationId);
+        get().removeConversation(conversationId);
       },
       markAsSeen: async () => {
         try {

@@ -15,6 +15,14 @@ const MessageInput = ({ selectedConvo }: { selectedConvo: Conversation }) => {
 
   if (!user) return;
 
+  if (selectedConvo.type === "direct" && selectedConvo.isBlocked) {
+    return (
+      <div className="p-3 text-sm text-destructive bg-background border-t">
+        Cuộc trò chuyện này đang bị chặn. Bạn hãy bỏ chặn để tiếp tục nhắn tin.
+      </div>
+    );
+  }
+
   const sendMessage = async () => {
     if (!value.trim()) return;
     const currValue = value;

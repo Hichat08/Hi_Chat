@@ -86,6 +86,44 @@ const conversationSchema = new mongoose.Schema(
       of: Number,
       default: {},
     },
+    archivedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    restrictedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    blockedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    streak: {
+      count: {
+        type: Number,
+        default: 0,
+      },
+      lastCompletedDate: {
+        type: Date,
+        default: null,
+      },
+      currentDay: {
+        type: Date,
+        default: null,
+      },
+      currentDaySenders: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      ],
+    },
   },
   {
     timestamps: true,

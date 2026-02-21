@@ -64,4 +64,22 @@ export const chatService = {
     const res = await api.post("/conversations", { type, name, memberIds });
     return res.data.conversation;
   },
+
+  async updateConversationPreference(
+    conversationId: string,
+    action: "archive" | "restrict" | "block",
+    value: boolean
+  ) {
+    const res = await api.patch(`/conversations/${conversationId}/preferences`, {
+      action,
+      value,
+    });
+
+    return res.data;
+  },
+
+  async deleteConversationForEveryone(conversationId: string) {
+    const res = await api.delete(`/conversations/${conversationId}`);
+    return res.data;
+  },
 };

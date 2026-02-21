@@ -27,6 +27,13 @@ export interface LastMessage {
   };
 }
 
+export interface ConversationStreak {
+  count: number;
+  lastCompletedDate?: string | null;
+  currentDay?: string | null;
+  currentDaySenders?: string[];
+}
+
 export interface Conversation {
   _id: string;
   type: "direct" | "group";
@@ -36,6 +43,7 @@ export interface Conversation {
   seenBy: SeenUser[];
   lastMessage: LastMessage | null;
   unreadCounts: Record<string, number>; // key = userId, value = unread count
+  streak?: ConversationStreak;
   createdAt: string;
   updatedAt: string;
 }

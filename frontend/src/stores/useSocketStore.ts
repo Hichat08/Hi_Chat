@@ -50,6 +50,7 @@ export const useSocketStore = create<SocketState>((set, get) => ({
         ...conversation,
         lastMessage,
         unreadCounts,
+        streak: conversation.streak,
       };
 
       if (useChatStore.getState().activeConversationId === message.conversationId) {

@@ -4,6 +4,7 @@ import express from "express";
 import dotenv from "dotenv";
 import { socketAuthMiddleware } from "../middlewares/socketMiddleware.js";
 import { getUserConversationsForSocketIO } from "../controllers/conversationController.js";
+import { isAllowedOrigin } from "../libs/corsConfig.js";
 
 dotenv.config();
 
@@ -13,7 +14,14 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL,
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Không được phép bởi CORS"));
+    },
     credentials: true,
   },
 });

@@ -4,6 +4,7 @@ import {
   emitNewMessage,
   updateConversationAfterCreateMessage,
 } from "../utils/messageHelper.js";
+import { updateDirectConversationStreak } from "../utils/streakHelper.js";
 import { io } from "../socket/index.js";
 
 export const sendDirectMessage = async (req, res) => {
@@ -40,6 +41,7 @@ export const sendDirectMessage = async (req, res) => {
     });
 
     updateConversationAfterCreateMessage(conversation, message, senderId);
+    updateDirectConversationStreak(conversation, senderId, message.createdAt);
 
     await conversation.save();
 

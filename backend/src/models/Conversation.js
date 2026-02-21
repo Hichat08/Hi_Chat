@@ -86,6 +86,26 @@ const conversationSchema = new mongoose.Schema(
       of: Number,
       default: {},
     },
+    streak: {
+      count: {
+        type: Number,
+        default: 0,
+      },
+      lastCompletedDate: {
+        type: Date,
+        default: null,
+      },
+      currentDay: {
+        type: Date,
+        default: null,
+      },
+      currentDaySenders: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      ],
+    },
   },
   {
     timestamps: true,

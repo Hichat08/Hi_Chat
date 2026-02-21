@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import UserAvatar from "./UserAvatar";
 import StatusBadge from "./StatusBadge";
 import UnreadCountBadge from "./UnreadCountBadge";
+import StreakBadge from "./StreakBadge";
 import { useSocketStore } from "@/stores/useSocketStore";
 
 const DirectMessageCard = ({ convo }: { convo: Conversation }) => {
@@ -57,14 +58,17 @@ const DirectMessageCard = ({ convo }: { convo: Conversation }) => {
         </>
       }
       subtitle={
-        <p
-          className={cn(
-            "text-sm truncate",
-            unreadCount > 0 ? "font-medium text-foreground" : "text-muted-foreground"
-          )}
-        >
-          {lastMessage}
-        </p>
+        <div className="flex items-center gap-2 min-w-0">
+          <p
+            className={cn(
+              "text-sm truncate",
+              unreadCount > 0 ? "font-medium text-foreground" : "text-muted-foreground"
+            )}
+          >
+            {lastMessage}
+          </p>
+          <StreakBadge count={convo.streak?.count} />
+        </div>
       }
     />
   );

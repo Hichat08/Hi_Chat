@@ -7,6 +7,7 @@ import UserAvatar from "./UserAvatar";
 import StatusBadge from "./StatusBadge";
 import GroupChatAvatar from "./GroupChatAvatar";
 import { useSocketStore } from "@/stores/useSocketStore";
+import StreakBadge from "./StreakBadge";
 
 const ChatWindowHeader = ({ chat }: { chat?: Conversation }) => {
   const { conversations, activeConversationId } = useChatStore();
@@ -70,6 +71,7 @@ const ChatWindowHeader = ({ chat }: { chat?: Conversation }) => {
           <h2 className="font-semibold text-foreground">
             {chat.type === "direct" ? otherUser?.displayName : chat.group?.name}
           </h2>
+          {chat.type === "direct" && <StreakBadge count={chat.streak?.count} className="text-[11px]" />}
         </div>
       </div>
     </header>
